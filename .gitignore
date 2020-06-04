@@ -1,0 +1,17 @@
+# vscode
+.vscode/
+*.log
+
+# nodejs
+node_modules/
+
+# build
+.tools/
+.tmp/
+static/
+.idea/
+vendor
+# go
+*debug*
+.DS_Store
+runtime
