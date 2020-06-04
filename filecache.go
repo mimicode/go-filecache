@@ -14,8 +14,8 @@ import (
 type FileCache struct {
 	mutex   sync.Mutex
 	config  FileCacheConfig //配置
-	sp      string  //文件夹分隔符
-	isGcing bool   //是否正在gc
+	sp      string          //文件夹分隔符
+	isGcing bool            //是否正在gc
 }
 
 func New(config FileCacheConfig) *FileCache {
@@ -105,6 +105,7 @@ func (fc *FileCache) Set(key, value string, exp int64) bool {
 	}
 	_ = os.Chtimes(cacheFile, time.Now(), time.Now().Add(time.Duration(exp)*time.Second))
 	fc.mutex.Unlock()
+	go fc.gc()
 	if err != nil {
 		return false
 	}
@@ -116,6 +117,7 @@ func (fc *FileCache) Get(key string) []byte {
 	fc.mutex.Lock()
 	val, err := ioutil.ReadFile(cacheFile)
 	fc.mutex.Unlock()
+	go fc.gc()
 	if err != nil {
 		return nil
 	} else {
@@ -137,9 +139,10 @@ func (fc *FileCache) gc() {
 		fc.isGcing = true
 		fc.mutex.Unlock()
 		//执行gc
-		go fc.gcRecursive(fc.config.CachePath)
+		fc.gcRecursive(fc.config.CachePath)
 	}
 }
+
 //递归gc过期文件
 func (fc *FileCache) gcRecursive(cachePath string) {
 	if dirs, err := ioutil.ReadDir(cachePath); err != nil {
