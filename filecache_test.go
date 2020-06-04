@@ -39,7 +39,7 @@ func TestFileCache_Set(t *testing.T) {
 
 func TestFileCache_Get(t *testing.T) {
 	bytes := filecache.Get("12212")
-	fmt.Println(string(bytes))
+	fmt.Println(bytes)
 }
 
 func TestFileCache_Exists(t *testing.T) {

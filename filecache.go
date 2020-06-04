@@ -115,14 +115,35 @@ func (fc *FileCache) Set(key, value string, exp int64) bool {
 func (fc *FileCache) Get(key string) []byte {
 	cacheFile := fc.getCacheFile(fc.buildKey(key))
 	fc.mutex.Lock()
-	val, err := ioutil.ReadFile(cacheFile)
-	fc.mutex.Unlock()
-	go fc.gc()
+	file, err := os.Open(cacheFile)
 	if err != nil {
+		fc.mutex.Unlock()
+		go fc.gc()
+		return nil
+	}
+	defer file.Close()
+	stat, err := file.Stat()
+	if err != nil {
+		fc.mutex.Unlock()
+		go fc.gc()
+		return nil
+	}
+	if stat.ModTime().Before(time.Now()) {
+		fc.mutex.Unlock()
+		go fc.gc()
+		return nil
+	}
+	val, err := ioutil.ReadAll(file)
+	if err != nil {
+		fc.mutex.Unlock()
+		go fc.gc()
 		return nil
 	} else {
+		fc.mutex.Unlock()
+		go fc.gc()
 		return val
 	}
+
 }
 
 func (fc *FileCache) gc() {
