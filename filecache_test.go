@@ -2,6 +2,7 @@ package go_filecache
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 )
 
@@ -16,9 +17,6 @@ var (
 	})
 )
 
-func init() {
-
-}
 func TestFileCache_buildKey(t *testing.T) {
 	key := filecache.buildKey("afda")
 	fmt.Println(key)
@@ -53,4 +51,66 @@ func TestFileCache_Del(t *testing.T) {
 
 func TestFileCache_gcRecursive(t *testing.T) {
 	filecache.gcRecursive(filecache.config.CachePath)
+}
+
+func BenchmarkFileCache_Set(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		filecache.Set("V"+"_"+strconv.Itoa(i), "1", 1000)
+	}
+}
+func BenchmarkFileCache_Set20Tread(b *testing.B) {
+	q := make(chan bool, 0)
+	cn := 20
+	for c := 0; c < cn; c++ {
+		go func() {
+			for i := 0; i < b.N; i++ {
+				filecache.Set("V"+strconv.Itoa(cn)+"_"+strconv.Itoa(i), "1", 1000)
+			}
+			q <- true
+		}()
+	}
+	for c := 0; c < cn; c++ {
+		<-q
+	}
+}
+func BenchmarkFileCache_Get(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		filecache.Get("V" + "_" + strconv.Itoa(i))
+	}
+}
+func BenchmarkFileCache_Get20Thread(b *testing.B) {
+	q := make(chan bool, 0)
+	cn := 20
+	for c := 0; c < cn; c++ {
+		go func() {
+			for i := 0; i < b.N; i++ {
+				filecache.Get("V" + strconv.Itoa(cn) + "_" + strconv.Itoa(i))
+			}
+			q <- true
+		}()
+	}
+	for c := 0; c < cn; c++ {
+		<-q
+	}
+}
+
+func BenchmarkFileCache_SetGet(b *testing.B) {
+	ch := make(chan struct{}, 0)
+	go func() {
+		for i := 0; i < b.N; i++ {
+			filecache.Set("V"+"_"+strconv.Itoa(i), "1", 1000)
+		}
+		ch <- struct{}{}
+	}()
+
+	go func() {
+		for i := 0; i < b.N; i++ {
+			filecache.Get("V" + "_" + strconv.Itoa(i))
+		}
+		ch <- struct{}{}
+	}()
+
+	<-ch
+	<-ch
+
 }

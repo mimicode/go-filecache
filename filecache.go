@@ -89,23 +89,19 @@ func (fc *FileCache) Del(key string) {
 //设置缓存
 func (fc *FileCache) Set(key, value string, exp int64) bool {
 	cacheFile := fc.getCacheFile(fc.buildKey(key))
-	//if fc.config.PathLevel > 0 {
-	//	if err := os.MkdirAll(path.Dir(cacheFile), fc.config.DirMode); err != nil {
-	//		return false
-	//	}
-	//}
-
-	if err := os.MkdirAll(path.Dir(cacheFile), fc.config.DirMode); err != nil {
-		return false
+	if fc.config.PathLevel > 0 {
+		if err := os.MkdirAll(path.Dir(cacheFile), fc.config.DirMode); err != nil {
+			return false
+		}
 	}
-	fc.mutex.Lock()
+	//fc.mutex.Lock()
 	err := ioutil.WriteFile(cacheFile, []byte(value), fc.config.DirMode)
 	if exp <= 0 {
 		exp = 24 * 3600 * 365 * 2 //2年
 	}
 	_ = os.Chtimes(cacheFile, time.Now(), time.Now().Add(time.Duration(exp)*time.Second))
-	fc.mutex.Unlock()
-	go fc.gc()
+	//fc.mutex.Unlock()
+	//go fc.gc()
 	if err != nil {
 		return false
 	}
